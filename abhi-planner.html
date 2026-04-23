@@ -2301,8 +2301,9 @@ function setupDrag(handle,n){
         children:children,
         childOffsets:children.map(function(c){return{id:c.id,dx:c.x-n.x,dy:c.y-n.y};})
       };
-      nDragOff.x=(e.clientX-cOffX)/cScale-n.x;
-      nDragOff.y=(e.clientY-cOffY)/cScale-n.y;
+      var vr=viewportRect();
+      nDragOff.x=(e.clientX-vr.left-cOffX)/cScale-n.x;
+      nDragOff.y=(e.clientY-vr.top-cOffY)/cScale-n.y;
       var el=document.getElementById(n.id);
       if(el)el.classList.add('dragging');
       cpanel.style.cursor='grabbing';
@@ -2312,8 +2313,9 @@ function setupDrag(handle,n){
       if(e.target.closest('.dot-grip,.cnb-mode,.stage-del,.proj-add,.cdots,.cdot,.cn-rsz'))return;
       e.stopPropagation();e.preventDefault();
       nDrag={node:n,children:[],childOffsets:[]};
-      nDragOff.x=(e.clientX-cOffX)/cScale-n.x;
-      nDragOff.y=(e.clientY-cOffY)/cScale-n.y;
+      var vr=viewportRect();
+      nDragOff.x=(e.clientX-vr.left-cOffX)/cScale-n.x;
+      nDragOff.y=(e.clientY-vr.top-cOffY)/cScale-n.y;
       var el2=document.getElementById(n.id);
       if(el2)el2.classList.add('dragging');
       cpanel.style.cursor='grabbing';
