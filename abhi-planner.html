@@ -125,6 +125,16 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 /* CANVAS PANEL */
 #cp{flex:1;position:relative;overflow:hidden;background:var(--bg);cursor:crosshair;}
 #cp::before{content:'';position:absolute;inset:0;pointer-events:none;background-image:radial-gradient(circle,var(--dot) 1px,transparent 1px);background-size:24px 24px;z-index:0;}
+#cp-corner{position:absolute;top:0;left:0;width:22px;height:22px;background:var(--sf);border-right:1px solid var(--bd);border-bottom:1px solid var(--bd);z-index:34;}
+#ruler-top{position:absolute;top:0;left:22px;right:0;height:22px;background:var(--sf);border-bottom:1px solid var(--bd);z-index:33;pointer-events:none;}
+#ruler-left{position:absolute;top:22px;left:0;bottom:0;width:22px;background:var(--sf);border-right:1px solid var(--bd);z-index:33;pointer-events:none;}
+#cp-scroll-host{position:absolute;top:22px;left:22px;right:0;bottom:0;overflow:scroll;z-index:1;background:transparent;scrollbar-color:rgba(108,138,255,.55) rgba(255,255,255,.04);scrollbar-width:thin;}
+#cp-scroll-space{width:14000px;height:14000px;pointer-events:none;}
+#cp-scroll-host::-webkit-scrollbar{width:14px;height:14px;}
+#cp-scroll-host::-webkit-scrollbar-track{background:rgba(255,255,255,.04);}
+#cp-scroll-host::-webkit-scrollbar-thumb{background:rgba(108,138,255,.45);border-radius:10px;border:3px solid rgba(0,0,0,0);background-clip:padding-box;}
+#cp-scroll-host::-webkit-scrollbar-thumb:hover{background:rgba(108,138,255,.7);border:3px solid rgba(0,0,0,0);background-clip:padding-box;}
+#cp-viewport{position:absolute;top:22px;left:22px;right:14px;bottom:14px;overflow:hidden;z-index:2;}
 #cw{position:absolute;top:0;left:0;transform-origin:0 0;width:6000px;height:6000px;}
 #dr-rect{position:absolute;border:1.5px dashed var(--ac);background:rgba(108,138,255,.07);border-radius:3px;pointer-events:none;z-index:100;display:none;}
 
@@ -132,10 +142,11 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 #sel-rect{position:absolute;border:1.5px dashed #f59e0b;background:rgba(245,158,11,.06);border-radius:3px;pointer-events:none;z-index:101;display:none;}
 
 /* nav */
-#cnav{position:absolute;bottom:8px;right:8px;z-index:30;display:flex;flex-direction:column;align-items:center;gap:2px;}
+#cnav{position:absolute;bottom:8px;right:8px;z-index:30;display:flex;flex-direction:column;align-items:flex-end;gap:4px;}
 .nb{width:24px;height:24px;border-radius:4px;background:var(--sf);border:1px solid var(--bd);color:var(--tx);font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
 .nb:hover{border-color:var(--ac);color:var(--ac);}
-#zbadge{padding:2px 6px;font-size:9px;font-family:monospace;color:var(--mu);background:var(--sf);border:1px solid var(--bd);border-radius:3px;min-width:40px;text-align:center;}
+.nb.wide{width:auto;height:24px;padding:0 8px;font-size:9px;font-family:monospace;}
+#zbadge{padding:2px 8px;font-size:9px;font-family:monospace;color:var(--mu);background:var(--sf);border:1px solid var(--bd);border-radius:3px;min-width:48px;text-align:center;height:24px;display:flex;align-items:center;justify-content:center;}
 #th{position:absolute;top:6px;left:50%;transform:translateX(-50%);font-size:9px;font-family:monospace;color:var(--mu);background:var(--sf);border:1px solid var(--bd);padding:2px 8px;border-radius:3px;pointer-events:none;z-index:20;white-space:nowrap;}
 
 /* selection badge */
@@ -404,11 +415,11 @@ body[data-editmode="drag"] .cn-del{
   cursor:pointer!important;
 }
 /* In edit mode, canvas itself is crosshair */
-body[data-editmode="edit"] #cp{cursor:crosshair;}
+body[data-editmode="edit"] #cp,body[data-editmode="edit"] #cp-viewport{cursor:crosshair;}
 
 /* In move mode canvas is grab */
-body[data-editmode="drag"] #cp{cursor:grab;}
-body[data-editmode="drag"] #cp.panning{cursor:grabbing!important;}
+body[data-editmode="drag"] #cp,body[data-editmode="drag"] #cp-viewport{cursor:grab;}
+body[data-editmode="drag"] #cp.panning,body[data-editmode="drag"] #cp-viewport.panning{cursor:grabbing!important;}
 
 /* ── BLOCK resize edges ── */
 .cnb .cn-rsz{bottom:-1px;right:-1px;}
@@ -561,29 +572,25 @@ body[data-editmode="drag"] #cp.panning{cursor:grabbing!important;}
   <div id="div"></div>
 
   <div id="cp">
-    <div id="dr-rect"></div>
-    <div id="sel-rect"></div>
-    <div id="cw"></div>
-    <div id="th">✏ drag canvas to draw box · right-click for options</div>
-    <div id="shortcuts-hint" style="position:absolute;bottom:36px;left:8px;font-size:8px;font-family:monospace;color:var(--mu);background:var(--sf);border:1px solid var(--bd);padding:3px 8px;border-radius:4px;pointer-events:none;z-index:20;opacity:.7;line-height:1.7;">
-      Ctrl+scroll = zoom at cursor · Scroll = pan · M = toggle Move/Edit · Space+drag = pan · Ctrl+0 = reset
-    </div>
-    <div id="sel-badge">0 selected</div>
-    <div id="cnav">
-      <div style="display:flex;gap:2px;"><button class="nb" onclick="panBy(0,-80)" title="Pan up (↑)">▲</button></div>
-      <div style="display:flex;gap:2px;">
-        <button class="nb" onclick="panBy(-80,0)" title="Pan left">◀</button>
-        <button class="nb" onclick="resetV()" title="Reset view (Ctrl+0)">⌂</button>
-        <button class="nb" onclick="panBy(80,0)" title="Pan right">▶</button>
+    <div id="cp-corner"></div>
+    <canvas id="ruler-top"></canvas>
+    <canvas id="ruler-left"></canvas>
+    <div id="cp-scroll-host"><div id="cp-scroll-space"></div></div>
+    <div id="cp-viewport">
+      <div id="dr-rect"></div>
+      <div id="sel-rect"></div>
+      <div id="cw"></div>
+      <div id="th">✏ drag canvas to draw box · right-click for options</div>
+      <div id="shortcuts-hint" style="position:absolute;bottom:36px;left:8px;font-size:8px;font-family:monospace;color:var(--mu);background:var(--sf);border:1px solid var(--bd);padding:3px 8px;border-radius:4px;pointer-events:none;z-index:20;opacity:.7;line-height:1.7;">
+        Ctrl+scroll = zoom at cursor · Scroll = pan · M = toggle Move/Edit · Space+drag = pan · Ctrl+0 = reset
       </div>
-      <div style="display:flex;gap:2px;"><button class="nb" onclick="panBy(0,80)" title="Pan down">▼</button></div>
-      <div style="display:flex;gap:2px;margin-top:2px;">
-        <button class="nb" onclick="doZoom(-.15)" title="Zoom out (Ctrl+-)">−</button>
-        <div id="zbadge" title="Current zoom level">100%</div>
-        <button class="nb" onclick="doZoom(.15)" title="Zoom in (Ctrl+=)">+</button>
-      </div>
-      <div style="display:flex;gap:2px;margin-top:2px;">
-        <button class="nb" onclick="fitToContent()" title="Fit all content in view" style="width:54px;font-size:8px;">fit all</button>
+      <div id="sel-badge">0 selected</div>
+      <div id="cnav">
+        <div style="display:flex;gap:4px;align-items:center;">
+          <div id="zbadge" title="Current zoom level">100%</div>
+          <button class="nb wide" onclick="fitToContent()" title="Fit all content in view">fit all</button>
+          <button class="nb wide" onclick="resetV()" title="Reset view (Ctrl+0)">reset view</button>
+        </div>
       </div>
     </div>
   </div>
@@ -1812,21 +1819,103 @@ function confirmMsSchedule(){
 // ════════════════════════════════════════════════
 // CANVAS ENGINE
 // ════════════════════════════════════════════════
-var world=document.getElementById('cw'),cpanel=document.getElementById('cp'),drRect=document.getElementById('dr-rect'),selRect=document.getElementById('sel-rect');
-var panning=false,panSt={},drawing=false,drawSt={},lasso=false,lassoSt={};
+var world=document.getElementById('cw'),cpanel=document.getElementById('cp'),cpViewport=document.getElementById('cp-viewport'),cpScrollHost=document.getElementById('cp-scroll-host'),cpScrollSpace=document.getElementById('cp-scroll-space'),topRuler=document.getElementById('ruler-top'),leftRuler=document.getElementById('ruler-left'),drRect=document.getElementById('dr-rect'),selRect=document.getElementById('sel-rect');
+var WORLD_W=6000,WORLD_H=6000,SCROLL_PAD=4000,RULER_SIZE=22;
+var syncingScroll=false,panning=false,panSt={},drawing=false,drawSt={},lasso=false,lassoSt={};
 var nDrag=null,nDragOff={},nResize=null;
 var ctxTgt=null,ctxWP=null;
 
-function applyT(){
+function viewportRect(){return cpViewport.getBoundingClientRect();}
+function clampOffsets(){
+  var minX=-(WORLD_W*cScale+SCROLL_PAD-cpViewport.clientWidth);
+  var maxX=SCROLL_PAD;
+  var minY=-(WORLD_H*cScale+SCROLL_PAD-cpViewport.clientHeight);
+  var maxY=SCROLL_PAD;
+  if(!isFinite(minX))minX=-WORLD_W*cScale;
+  if(!isFinite(minY))minY=-WORLD_H*cScale;
+  cOffX=Math.min(maxX,Math.max(minX,cOffX));
+  cOffY=Math.min(maxY,Math.max(minY,cOffY));
+}
+function syncScrollFromOffsets(){
+  if(!cpScrollHost)return;
+  syncingScroll=true;
+  cpScrollHost.scrollLeft=Math.round(SCROLL_PAD-cOffX);
+  cpScrollHost.scrollTop=Math.round(SCROLL_PAD-cOffY);
+  requestAnimationFrame(function(){syncingScroll=false;});
+}
+function syncOffsetsFromScroll(){
+  cOffX=SCROLL_PAD-cpScrollHost.scrollLeft;
+  cOffY=SCROLL_PAD-cpScrollHost.scrollTop;
+}
+function updateScrollSpace(){
+  cpScrollSpace.style.width=Math.round(WORLD_W*cScale+SCROLL_PAD*2)+'px';
+  cpScrollSpace.style.height=Math.round(WORLD_H*cScale+SCROLL_PAD*2)+'px';
+}
+function drawRulers(){
+  if(!topRuler||!leftRuler)return;
+  var dpr=window.devicePixelRatio||1;
+  var w=cpViewport.clientWidth,h=cpViewport.clientHeight;
+  if(w<1||h<1)return;
+  topRuler.width=Math.floor(w*dpr); topRuler.height=Math.floor(RULER_SIZE*dpr);
+  leftRuler.width=Math.floor(RULER_SIZE*dpr); leftRuler.height=Math.floor(h*dpr);
+  topRuler.style.width=w+'px'; topRuler.style.height=RULER_SIZE+'px';
+  leftRuler.style.width=RULER_SIZE+'px'; leftRuler.style.height=h+'px';
+  var ctxT=topRuler.getContext('2d'), ctxL=leftRuler.getContext('2d');
+  ctxT.setTransform(dpr,0,0,dpr,0,0); ctxL.setTransform(dpr,0,0,dpr,0,0);
+  var bg=getComputedStyle(document.body).getPropertyValue('--sf').trim()||'#12141f';
+  var bd=getComputedStyle(document.body).getPropertyValue('--bd').trim()||'#1e2235';
+  var tx=getComputedStyle(document.body).getPropertyValue('--mu').trim()||'#64748b';
+  ctxT.clearRect(0,0,w,RULER_SIZE); ctxL.clearRect(0,0,RULER_SIZE,h);
+  ctxT.fillStyle=bg; ctxT.fillRect(0,0,w,RULER_SIZE);
+  ctxL.fillStyle=bg; ctxL.fillRect(0,0,RULER_SIZE,h);
+  ctxT.strokeStyle=bd; ctxT.beginPath(); ctxT.moveTo(0,RULER_SIZE-0.5); ctxT.lineTo(w,RULER_SIZE-0.5); ctxT.stroke();
+  ctxL.strokeStyle=bd; ctxL.beginPath(); ctxL.moveTo(RULER_SIZE-0.5,0); ctxL.lineTo(RULER_SIZE-0.5,h); ctxL.stroke();
+  var units=[10,20,25,50,100,200,250,500,1000];
+  var targetPx=80;
+  var worldStep=units[0];
+  for(var i=0;i<units.length;i++){ if(units[i]*cScale>=targetPx){ worldStep=units[i]; break; } worldStep=units[i]; }
+  var startX=Math.floor((-cOffX)/(worldStep*cScale))-2;
+  var endX=Math.ceil((w-cOffX)/(worldStep*cScale))+2;
+  ctxT.strokeStyle=tx; ctxT.fillStyle=tx; ctxT.font='9px monospace';
+  for(var ix=startX; ix<=endX; ix++){
+    var worldX=ix*worldStep; var sx=worldX*cScale + cOffX;
+    var major=(Math.round(worldX/worldStep)%5===0);
+    ctxT.beginPath(); ctxT.moveTo(Math.round(sx)+0.5,RULER_SIZE); ctxT.lineTo(Math.round(sx)+0.5,major?8:13); ctxT.stroke();
+    if(major){ ctxT.fillText(String(worldX), sx+2, 8); }
+  }
+  var startY=Math.floor((-cOffY)/(worldStep*cScale))-2;
+  var endY=Math.ceil((h-cOffY)/(worldStep*cScale))+2;
+  ctxL.strokeStyle=tx; ctxL.fillStyle=tx; ctxL.font='9px monospace';
+  for(var iy=startY; iy<=endY; iy++){
+    var worldY=iy*worldStep; var sy=worldY*cScale + cOffY;
+    var majorY=(Math.round(worldY/worldStep)%5===0);
+    ctxL.beginPath(); ctxL.moveTo(RULER_SIZE,Math.round(sy)+0.5); ctxL.lineTo(majorY?8:13,Math.round(sy)+0.5); ctxL.stroke();
+    if(majorY){
+      ctxL.save();
+      ctxL.translate(8,sy-2);
+      ctxL.rotate(-Math.PI/2);
+      ctxL.fillText(String(worldY),0,0);
+      ctxL.restore();
+    }
+  }
+}
+function applyT(skipScroll){
+  clampOffsets();
   world.style.transform='translate('+cOffX+'px,'+cOffY+'px) scale('+cScale+')';
   document.getElementById('zbadge').textContent=Math.round(cScale*100)+'%';
+  updateScrollSpace();
+  if(!skipScroll)syncScrollFromOffsets();
+  drawRulers();
+  queuePlannerSave();
 }
 applyT();
+function zoomAt(mx,my,ns){
+  ns=Math.min(5,Math.max(0.05,ns));
+  cOffX=mx-(mx-cOffX)*(ns/cScale); cOffY=my-(my-cOffY)*(ns/cScale); cScale=ns; applyT();
+}
 function doZoom(d){
-  var r=cpanel.getBoundingClientRect(),mx=r.width/2,my=r.height/2;
-  var ns=Math.min(4,Math.max(0.08,cScale+d));
-  cOffX=mx-(mx-cOffX)*(ns/cScale);cOffY=my-(my-cOffY)*(ns/cScale);
-  cScale=ns;applyT();
+  var r=viewportRect(),mx=r.width/2,my=r.height/2;
+  zoomAt(mx,my,Math.min(4,Math.max(0.08,cScale+d)));
 }
 function panBy(dx,dy){cOffX+=dx;cOffY+=dy;applyT();}
 function resetV(){cScale=1;cOffX=0;cOffY=0;applyT();}
@@ -1839,7 +1928,7 @@ function fitToContent(){
     maxX=Math.max(maxX,x+w);maxY=Math.max(maxY,y+h+80);
   });
   var pad=60;
-  var r=cpanel.getBoundingClientRect();
+  var r=viewportRect();
   var contentW=maxX-minX+pad*2,contentH=maxY-minY+pad*2;
   var scaleX=r.width/contentW,scaleY=r.height/contentH;
   cScale=Math.min(Math.min(scaleX,scaleY),1.5);
@@ -1859,41 +1948,40 @@ function updateSelBadge(){
   if(n>0){badge.style.display='block';badge.textContent=n+' selected — drag grip to calendar';}
   else badge.style.display='none';
 }
+window.addEventListener('resize',function(){applyT();});
 
 // WHEEL — Google Maps behaviour:
 // • Plain scroll = pan (vertical trackpad or mouse wheel)
 // • Ctrl/Cmd + scroll = zoom centred on cursor
 // • Shift + scroll = horizontal pan
-cpanel.addEventListener('wheel',function(e){
+cpViewport.addEventListener('wheel',function(e){
   e.preventDefault();e.stopPropagation();
-  var r=cpanel.getBoundingClientRect();
+  var r=viewportRect();
   var mx=e.clientX-r.left, my=e.clientY-r.top;
 
   if(e.ctrlKey||e.metaKey){
-    // Zoom — centred exactly on mouse cursor position (Google Maps style)
-    var zoomFactor=e.deltaY>0?0.92:1.09; // smooth multiplicative zoom
+    var zoomFactor=e.deltaY>0?0.92:1.09;
     var ns=Math.min(5,Math.max(0.05,cScale*zoomFactor));
-    // Adjust offset so the point under cursor stays fixed
-    cOffX=mx-(mx-cOffX)*(ns/cScale);
-    cOffY=my-(my-cOffY)*(ns/cScale);
-    cScale=ns;
-    applyT();
+    zoomAt(mx,my,ns);
   } else if(e.shiftKey){
-    // Horizontal pan
     cOffX-=e.deltaY*0.8;
     applyT();
   } else {
-    // Pan — natural direction, both axes (trackpad)
-    var speed=1.0;
-    cOffX-=e.deltaX*speed;
-    cOffY-=e.deltaY*speed;
+    cOffX-=e.deltaX;
+    cOffY-=e.deltaY;
     applyT();
   }
 },{passive:false});
+cpScrollHost.addEventListener('scroll',function(){
+  if(syncingScroll)return;
+  syncOffsetsFromScroll();
+  applyT(true);
+  queuePlannerSave();
+});
 
 world.addEventListener('dragover',function(e){e.stopPropagation();});
 
-cpanel.addEventListener('mousedown',function(e){
+cpViewport.addEventListener('mousedown',function(e){
   // Middle mouse always pans
   if(e.button===1){
     panning=true;panSt={x:e.clientX,y:e.clientY,ox:cOffX,oy:cOffY};
@@ -1901,7 +1989,7 @@ cpanel.addEventListener('mousedown',function(e){
   }
   if(e.button!==0)return;
 
-  var onEmpty=(e.target===cpanel||e.target===world||e.target===drRect||e.target===selRect);
+  var onEmpty=(e.target===cpViewport||e.target===cpanel||e.target===world||e.target===drRect||e.target===selRect);
   var spaceHeld=(_prevTool!==null);
 
   if(spaceHeld||editMode==='drag'){
@@ -1909,12 +1997,12 @@ cpanel.addEventListener('mousedown',function(e){
     if(onEmpty){
       panning=true;panSt={x:e.clientX,y:e.clientY,ox:cOffX,oy:cOffY};
       cpanel.style.cursor='grabbing';
-      cpanel.classList.add('panning');
+      cpanel.classList.add('panning'); cpViewport.classList.add('panning');
     }
   } else {
     // Edit mode: draw rect on empty canvas
     if(onEmpty){
-      drawing=true;var r2=cpanel.getBoundingClientRect();
+      drawing=true;var r2=viewportRect();
       drawSt={x:e.clientX-r2.left,y:e.clientY-r2.top};
       drRect.style.cssText='display:block;left:'+drawSt.x+'px;top:'+drawSt.y+'px;width:0;height:0;';
     }
@@ -1924,13 +2012,13 @@ cpanel.addEventListener('mousedown',function(e){
 document.addEventListener('mousemove',function(e){
   if(panning){cOffX=panSt.ox+(e.clientX-panSt.x);cOffY=panSt.oy+(e.clientY-panSt.y);applyT();}
   if(drawing){
-    var r=cpanel.getBoundingClientRect(),cx=e.clientX-r.left,cy=e.clientY-r.top;
+    var r=viewportRect(),cx=e.clientX-r.left,cy=e.clientY-r.top;
     var x=Math.min(drawSt.x,cx),y=Math.min(drawSt.y,cy);
     drRect.style.left=x+'px';drRect.style.top=y+'px';
     drRect.style.width=Math.abs(cx-drawSt.x)+'px';drRect.style.height=Math.abs(cy-drawSt.y)+'px';
   }
   if(lasso){
-    var r2=cpanel.getBoundingClientRect(),cx2=e.clientX-r2.left,cy2=e.clientY-r2.top;
+    var r2=viewportRect(),cx2=e.clientX-r2.left,cy2=e.clientY-r2.top;
     var lx=Math.min(lassoSt.x,cx2),ly=Math.min(lassoSt.y,cy2);
     var lw=Math.abs(cx2-lassoSt.x),lh=Math.abs(cy2-lassoSt.y);
     selRect.style.left=lx+'px';selRect.style.top=ly+'px';
@@ -1948,8 +2036,9 @@ document.addEventListener('mousemove',function(e){
     renderCanvas();
   }
   if(nDrag){
-    var nx=Math.round((e.clientX-cOffX)/cScale-nDragOff.x);
-    var ny=Math.round((e.clientY-cOffY)/cScale-nDragOff.y);
+    var vr=viewportRect();
+    var nx=Math.round((e.clientX-vr.left-cOffX)/cScale-nDragOff.x);
+    var ny=Math.round((e.clientY-vr.top-cOffY)/cScale-nDragOff.y);
     nDrag.node.x=nx;nDrag.node.y=ny;
     var el2=document.getElementById(nDrag.node.id);
     if(el2){el2.style.left=nx+'px';el2.style.top=ny+'px';}
@@ -1985,11 +2074,11 @@ document.addEventListener('mouseup',function(e){
   if(panning){
     panning=false;
     cpanel.style.cursor=editMode==='drag'?'grab':'crosshair';
-    cpanel.classList.remove('panning');
+    cpanel.classList.remove('panning'); cpViewport.classList.remove('panning');
   }
   if(drawing){
     drawing=false;drRect.style.display='none';
-    var r=cpanel.getBoundingClientRect(),cx=e.clientX-r.left,cy=e.clientY-r.top;
+    var r=viewportRect(),cx=e.clientX-r.left,cy=e.clientY-r.top;
     var w=Math.abs(cx-drawSt.x),h=Math.abs(cy-drawSt.y);
     if(w>15&&h>8){
       ctxWP={x:Math.round((Math.min(drawSt.x,cx)-cOffX)/cScale),y:Math.round((Math.min(drawSt.y,cy)-cOffY)/cScale),w:Math.round(w/cScale),h:Math.round(h/cScale)};
@@ -2001,19 +2090,20 @@ document.addEventListener('mouseup',function(e){
     pushU();
     document.querySelectorAll('.dragging').forEach(function(el){el.classList.remove('dragging');});
     nDrag=null;
+    queuePlannerSave();
     cpanel.style.cursor=editMode==='drag'?'grab':'crosshair';
   }
-  if(nResize){pushU();nResize=null;}
+  if(nResize){pushU();nResize=null;queuePlannerSave();}
 });
 
 // RIGHT CLICK (canvas)
-cpanel.addEventListener('contextmenu',function(e){
+cpViewport.addEventListener('contextmenu',function(e){
   e.preventDefault();
   var ne=e.target.closest('.cns,.cnb,.cnp');
   if(ne){ctxTgt=ne.id;ctxWP=null;openCtx(e.clientX,e.clientY,ne.id);}
   else{
     ctxTgt=null;
-    var r=cpanel.getBoundingClientRect();
+    var r=viewportRect();
     ctxWP={x:Math.round((e.clientX-r.left-cOffX)/cScale),y:Math.round((e.clientY-r.top-cOffY)/cScale),w:220,h:120};
     openCtx(e.clientX,e.clientY,null);
   }
@@ -2929,6 +3019,8 @@ function piSetAllDuration(mins){
 }
 
 restorePlannerAutosave();
+renderCanvas();
+applyT();
 setView('spacious');
 setEditMode('drag');
 setTimeout(function(){var t=document.querySelector('[data-iso="'+todayISO()+'"]');if(t)t.scrollIntoView({block:'start'});},120);
